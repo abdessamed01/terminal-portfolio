@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Abdessamed's Desk Portfolio</title>
+  <link rel="icon" type="image/png" href="icons/my_logo.png">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      height: 100vh;
+      width: 100vw;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: white;
+      overflow: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Updated background with subtle gradient and animated stars */
+    body {
+      background: linear-gradient(135deg, #121212, #000000);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Starfield container */
+    .stars {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      top: 0; left: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    /* Individual stars */
+    .stars span {
+      position: absolute;
+      background: #39ff14;
+      border-radius: 50%;
+      opacity: 0.8;
+      animation: twinkle 3s ease-in-out infinite;
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.8; }
+      50% { opacity: 0.2; }
+    }
+
+    .desktop {
+      height: 80vh;
+      padding: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 14px;
+      position: relative;
+      z-index: 1; /* on top of stars */
+    }
+    .icon {
+      min-width: 72px;
+      max-width: 24vw;
+      text-align: center;
+      cursor: pointer;
+      margin-bottom: 8px;
+    }
+    .icon img {
+      width: 12vw;
+      min-width: 40px;
+      max-width: 64px;
+      height: auto;
+      display: block;
+      margin: 0 auto 5px;
+      filter: drop-shadow(1px 1px 1px black);
+    }
+    .icon span {
+      display: block;
+      font-size: 1em;
+      user-select: none;
+      word-break: break-word;
+    }
+
+    .bottom-bar {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(30, 30, 30, 0.85);
+      border-radius: 30px;
+      padding: 6px 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.7);
+      min-width: unset;
+      max-width: 98vw;
+      font-size: 1em;
+      z-index: 2;
+    }
+    .bottom-bar button {
+      background: none;
+      border: none;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 8px 12px;
+      border-radius: 20px;
+      transition: background-color 0.3s;
+      min-width: 44px;
+      min-height: 44px;
+    }
+    .bottom-bar button:hover,
+    .bottom-bar button:focus {
+      background-color: #0984e3;
+      outline: none;
+    }
+    .bottom-bar button.active {
+      background-color: #0984e3;
+    }
+    .clock {
+      margin-left: auto;
+      font-family: monospace;
+      font-size: 14px;
+    }
+
+    /* Terminal modal */
+    .terminal-window {
+      position: fixed;
+      width: 800px;
+      height: 500px;
+      top: 50px;
+      left: 50px;
+      background: #111;
+      border: 2px solid #444;
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.6);
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      resize: both;
+      overflow: auto;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    .terminal-window iframe {
+      flex-grow: 1;
+      border: none;
+      width: 100%;
+      height: 100%;
+    }
+    .terminal-header {
+      background: #222;
+      padding: 8px 10px;
+      cursor: move;
+      font-size: 14px;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .terminal-header .buttons {
+      display: flex;
+      gap: 6px;
+    }
+    .terminal-header .btn {
+      width: 21px;
+      height: 21px;
+      border-radius: 50%;
+      background: #555;
+      cursor: pointer;
+    }
+    .terminal-header .btn.close {
+      background: #e74c3c;
+    }
+    .terminal-header .btn.minimize {
+      background: #f1c40f;
+    }
+
+    .terminal-window.minimized {
+      transform: scale(0.8);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #terminal-hint {
+      position: absolute;
+      top: 120px;
+      left: 30px;
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      max-width: 200px;
+      box-shadow: 0 0 10px #000;
+      z-index: 999;
+      animation: fadein 1s ease, float 2s ease-in-out infinite;
+    }
+    @keyframes fadein {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-4px);
+      }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 700px) {
+      .desktop {
+        gap: 6px;
+        padding: 6px;
+        height: 75vh;
+      }
+      .icon {
+        min-width: 40px;
+        max-width: 30vw;
+      }
+      .icon img {
+        width: 18vw;
+        max-width: 56px;
+        margin-bottom: 2px;
+      }
+      .bottom-bar {
+        padding: 4px 6px;
+        font-size: 0.9em;
+        gap: 6px;
+      }
+    }
+
+    @media (max-width: 800px) {
+      .terminal-window {
+        width: 96vw !important;
+        min-width: 0;
+        left: 2vw !important;
+        top: 8vw !important;
+        height: 76vh !important;
+        max-width: 100vw;
+        max-height: 100vh;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .terminal-window {
+        width: 95vw !important;
+        height: 70vh !important;
+        left: 2.5vw !important;
+        top: 8vw !important;
+      }
+      .bottom-bar button {
+        font-size: 12px;
+        padding: 6px 8px;
+      }
+    }
+
+    /* Reduce star size and opacity on smaller devices */
+    @media (max-width: 800px) {
+      .stars span {
+        opacity: 0.3;
+        width: 1.5px !important;
+        height: 1.5px !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="stars" aria-hidden="true"></div>
+
+  <div class="desktop">
+    <div class="icon" title="Terminal Portfolio" id="open-terminal">
+      <img src="icons/terminal.png" alt="Terminal Icon" />
+      <span>Terminal</span>
+    </div>
+    <div class="icon" title="My Computer">
+      <img src="icons/my_computer.png" alt="My Computer" />
+      <span>My Computer</span>
+    </div>
+    <div class="icon" title="Recycle Bin">
+      <img src="icons/Recyclebin.png" alt="Recycle Bin" />
+      <span>Recycle Bin</span>
+    </div>
+    <div id="terminal-hint">💡 Click the Terminal icon to open the portfolio!</div>
+  </div>
+
+  <div class="bottom-bar">
+    <button id="start-button">Start</button>
+    <button>Search</button>
+    <button>Browser</button>
+    <div class="clock" id="clock"></div>
+  </div>
+
+  <script>
+    // Generate random star positions and sizes
+    const starsContainer = document.querySelector('.stars');
+    const starCount = 60;
+
+    for (let i = 0; i < starCount; i++) {
+      const star = document.createElement('span');
+      const size = Math.random() * 2 + 1; // 1px to 3px
+      star.style.width = `${size}px`;
+      star.style.height = `${size}px`;
+      star.style.top = `${Math.random() * 100}%`;
+      star.style.left = `${Math.random() * 100}%`;
+      star.style.animationDuration = `${2 + Math.random() * 3}s`;
+      starsContainer.appendChild(star);
+    }
+
+    function updateClock() {
+      const clock = document.getElementById('clock');
+      const now = new Date();
+      let hours = now.getHours();
+      let minutes = now.getMinutes();
+      let ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12;
+      minutes = minutes < 10 ? '0' + minutes : minutes;
+      clock.textContent = hours + ':' + minutes + ' ' + ampm;
+    }
+    setInterval(updateClock, 60000);
+    updateClock();
+
+    const openTerminalBtn = document.getElementById("open-terminal");
+    const terminalHint = document.getElementById("terminal-hint");
+    let terminal = null;
+    let taskbarBtn = null;
+    let isMinimized = false;
+
+    openTerminalBtn.addEventListener("click", () => {
+      if (terminal) {
+        terminal.classList.remove("minimized");
+        taskbarBtn.classList.add("active");
+        return;
+      }
+
+      // Create terminal window
+      terminal = document.createElement("div");
+      terminal.className = "terminal-window";
+      terminal.innerHTML = `
+        <div class="terminal-header">
+          <span>Terminal</span>
+          <div class="buttons">
+            <div class="btn minimize"></div>
+            <div class="btn close"></div>
+          </div>
+        </div>
+        <iframe src="terminal-portfolio.html"></iframe>
+      `;
+      document.body.appendChild(terminal);
+
+      if (terminalHint) terminalHint.remove();
+      setTimeout(() => {
+        if (terminalHint) terminalHint.remove();
+      }, 7000);
+
+      // Drag logic
+      const header = terminal.querySelector(".terminal-header");
+      let offsetX, offsetY, isDragging = false;
+      header.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        offsetX = e.clientX - terminal.offsetLeft;
+        offsetY = e.clientY - terminal.offsetTop;
+      });
+      document.addEventListener("mouseup", () => isDragging = false);
+      document.addEventListener("mousemove", (e) => {
+        if (isDragging) {
+          terminal.style.left = (e.clientX - offsetX) + "px";
+          terminal.style.top = (e.clientY - offsetY) + "px";
+        }
+      });
+
+      // Minimize
+      terminal.querySelector(".btn.minimize").addEventListener("click", () => {
+        terminal.classList.add("minimized");
+        taskbarBtn.classList.remove("active");
+        isMinimized = true;
+      });
+
+      // Close
+      terminal.querySelector(".btn.close").addEventListener("click", () => {
+        if (terminal) terminal.remove();
+        if (taskbarBtn) taskbarBtn.remove();
+        terminal = null;
+        taskbarBtn = null;
+        isMinimized = false;
+      });
+
+      // Create taskbar button
+      taskbarBtn = document.createElement("button");
+      taskbarBtn.textContent = "Terminal";
+      taskbarBtn.classList.add("active");
+      document.querySelector(".bottom-bar").appendChild(taskbarBtn);
+
+      taskbarBtn.addEventListener("click", () => {
+        if (!terminal) return;
+        if (isMinimized) {
+          terminal.classList.remove("minimized");
+          taskbarBtn.classList.add("active");
+        } else {
+          terminal.classList.add("minimized");
+          taskbarBtn.classList.remove("active");
+        }
+        isMinimized = !isMinimized;
+      });
+    });
+  </script>
+</body>
+</html>

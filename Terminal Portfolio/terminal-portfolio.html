@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Terminal Portfolio</title>
+
+  <!-- Load JetBrains Mono font -->
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap" rel="stylesheet" />
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      background-color: #121212; /* Dark gray background */
+      color: #39ff14; /* Neon green text */
+      font-family: 'JetBrains Mono', monospace;
+      overflow: auto; /* allow scrolling for mobile */
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    #terminal {
+      padding: 4vw 3vw;
+      height: 100vh;
+      max-height: 100vh;
+      width: 100vw;
+      max-width: 100vw;
+      white-space: pre-wrap;
+      outline: none;
+      overflow-y: auto;
+      word-break: break-word;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Scrollbar styling */
+    #terminal::-webkit-scrollbar {
+      width: 8px;
+    }
+    #terminal::-webkit-scrollbar-track {
+      background: #222;
+    }
+    #terminal::-webkit-scrollbar-thumb {
+      background-color: #39ff14;
+      border-radius: 4px;
+    }
+    /* Firefox scrollbar */
+    #terminal {
+      scrollbar-width: thin;
+      scrollbar-color: #39ff14 #222;
+    }
+
+    .input-line {
+      display: flex;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .prompt {
+      margin-right: 8px;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    input.command-input {
+      background: none;
+      border: none;
+      color: #39ff14;
+      font-family: inherit;
+      font-size: 1em;
+      outline: none;
+      width: 100%;
+      caret-color: #39ff14;
+      border-right: 2px solid #39ff14;
+      animation: blinkCursor 1s steps(2, start) infinite;
+      min-height: 1.5em;
+      /* Prevent zoom on mobile for inputs */
+      font-variant-numeric: tabular-nums;
+    }
+
+    @keyframes blinkCursor {
+      0%, 100% {
+        border-right-color: #39ff14;
+      }
+      50% {
+        border-right-color: transparent;
+      }
+    }
+
+    .input-line.disabled input.command-input {
+      color: #666666;
+      border: none;
+      animation: none;
+      background: transparent;
+    }
+
+    #help-hint {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.85);
+      color: #39ff14;
+      padding: 8px 14px;
+      font-size: 14px;
+      border-radius: 6px;
+      font-family: monospace;
+      z-index: 10;
+      animation: fadeHelpIn 1s ease, floatHint 2s ease-in-out infinite;
+      box-shadow: 0 0 10px rgba(57, 255, 20, 0.4);
+      user-select: none;
+    }
+
+    @keyframes fadeHelpIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes floatHint {
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-4px);
+      }
+    }
+
+    .error {
+      color: #ff5555;
+      font-weight: bold;
+    }
+
+    /* Responsive */
+
+    @media (max-width: 600px) {
+      html, body {
+        font-size: 14px;
+      }
+      #terminal {
+        padding: 6vw 4vw;
+        font-size: 0.95rem;
+      }
+      .input-line {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .prompt {
+        margin-bottom: 4px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  
+  <div id="terminal" tabindex="0" aria-label="Terminal portfolio interface"></div>
+
+  <script>
+    const terminal = document.getElementById("terminal");
+
+    const commands = {
+      help: `
+Available commands:
+  about     - Show information about me
+  projects  - List my projects
+  contact   - How to reach me
+  cv        - Download my CV
+  clear     - Clear the screen`,
+      about: `Hi, I'm Abdessamed Yousfi, a motivated electrical engineer with a Master’s certificate in Electrical Machines and strong skills in web development, VR environments, and 3D design using Blender. Passionate about applying technology to create engaging digital solutions and contribute to sustainable energy projects. Eager to collaborate on innovative, impactful engineering and digital initiatives.`,
+      projects: `
+- Virtual Reality Room Experience demo App
+- Electrical VR LAB App
+- Personal Portfolio Website`,
+      contact: `📧 Email: yousfiabdessamed76@gmail.com
+🧑‍💻 GitHub: github.com/abdessamed01`,
+      cv: "Downloading CV...",
+      clear: ""
+    };
+
+    let commandHistory = [];
+    let historyIndex = -1;
+
+    function createInputLine() {
+      const inputLine = document.createElement("div");
+      inputLine.className = "input-line";
+
+      const prompt = document.createElement("span");
+      prompt.className = "prompt";
+      prompt.textContent = "$";
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "command-input";
+      input.autofocus = true;
+      input.setAttribute("aria-label", "Command input");
+
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          const command = input.value.trim().toLowerCase();
+          if (command) {
+            commandHistory.push(command);
+            historyIndex = commandHistory.length;
+          }
+          processCommand(command);
+          input.disabled = true;
+          inputLine.classList.add("disabled");
+          createInputLine();
+        } else if (e.key === "ArrowUp") {
+          if (commandHistory.length && historyIndex > 0) {
+            historyIndex--;
+            input.value = commandHistory[historyIndex];
+          }
+          e.preventDefault();
+        } else if (e.key === "ArrowDown") {
+          if (commandHistory.length && historyIndex < commandHistory.length - 1) {
+            historyIndex++;
+            input.value = commandHistory[historyIndex];
+          } else {
+            input.value = '';
+            historyIndex = commandHistory.length;
+          }
+          e.preventDefault();
+        }
+      });
+
+      inputLine.appendChild(prompt);
+      inputLine.appendChild(input);
+      terminal.appendChild(inputLine);
+      input.focus();
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function typeOutput(text, isError = false, callback) {
+      const output = document.createElement("div");
+      if (isError) {
+        output.className = "error";
+      }
+      terminal.appendChild(output);
+
+      let i = 0;
+      function typeChar() {
+        if (i < text.length) {
+          output.textContent += text.charAt(i);
+          i++;
+          terminal.scrollTop = terminal.scrollHeight;
+          setTimeout(typeChar, 12);
+        } else if (callback) {
+          callback();
+        }
+      }
+      typeChar();
+    }
+
+    function processCommand(command) {
+      if (commands.hasOwnProperty(command)) {
+        if (command === "clear") {
+          terminal.innerHTML = "";
+          createInputLine();
+          return;
+        } else if (command === "cv") {
+          typeOutput(commands.cv, false, () => {
+            const link = document.createElement("a");
+            link.href = "files/Abdessamed_Yousfi_CV.pdf";
+            link.download = "Abdessamed_Yousfi_CV.pdf";
+            link.style.display = "none";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            setTimeout(() => {
+              createInputLine();
+            }, 500);
+          });
+        } else {
+          typeOutput(commands[command]);
+        }
+      } else {
+        typeOutput(`Command not found: ${command}`, true);
+      }
+    }
+
+    function typeIntro(text, i = 0) {
+      if (i < text.length) {
+        terminal.innerHTML += text.charAt(i);
+        setTimeout(() => typeIntro(text, i + 1), 25);
+      } else {
+        terminal.innerHTML += "\n\n";
+        createInputLine();
+      }
+    }
+
+    typeIntro("Welcome to my terminal portfolio. Type 'help' to get started.");
+
+    terminal.addEventListener("click", () => {
+      const activeInput = terminal.querySelector(".command-input:not([disabled])");
+      if (activeInput) activeInput.focus();
+    });
+
+    const helpHint = document.getElementById('help-hint');
+    setTimeout(() => {
+      if (helpHint) helpHint.remove();
+    }, 7000);
+    document.addEventListener("keydown", () => {
+      if (helpHint) helpHint.remove();
+    });
+  </script>
+</body>
+</html>
